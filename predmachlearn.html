@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+
+<title>Prediction of exercise execution quality from accelerometer data</title>
+
+
+
+
+
+<style type="text/css">
+body, td {
+   font-family: sans-serif;
+   background-color: white;
+   font-size: 13px;
+}
+
+body {
+  max-width: 800px;
+  margin: auto;
+  padding: 1em;
+  line-height: 20px;
+}
+
+tt, code, pre {
+   font-family: 'DejaVu Sans Mono', 'Droid Sans Mono', 'Lucida Console', Consolas, Monaco, monospace;
+}
+
+h1 {
+   font-size:2.2em;
+}
+
+h2 {
+   font-size:1.8em;
+}
+
+h3 {
+   font-size:1.4em;
+}
+
+h4 {
+   font-size:1.0em;
+}
+
+h5 {
+   font-size:0.9em;
+}
+
+h6 {
+   font-size:0.8em;
+}
+
+a:visited {
+   color: rgb(50%, 0%, 50%);
+}
+
+pre, img {
+  max-width: 100%;
+}
+
+pre code {
+   display: block; padding: 0.5em;
+}
+
+code {
+  font-size: 92%;
+  border: 1px solid #ccc;
+}
+
+code[class] {
+  background-color: #F8F8F8;
+}
+
+table, td, th {
+  border: none;
+}
+
+blockquote {
+   color:#666666;
+   margin:0;
+   padding-left: 1em;
+   border-left: 0.5em #EEE solid;
+}
+
+hr {
+   height: 0px;
+   border-bottom: none;
+   border-top-width: thin;
+   border-top-style: dotted;
+   border-top-color: #999999;
+}
+
+@media print {
+   * {
+      background: transparent !important;
+      color: black !important;
+      filter:none !important;
+      -ms-filter: none !important;
+   }
+
+   body {
+      font-size:12pt;
+      max-width:100%;
+   }
+
+   a, a:visited {
+      text-decoration: underline;
+   }
+
+   hr {
+      visibility: hidden;
+      page-break-before: always;
+   }
+
+   pre, blockquote {
+      padding-right: 1em;
+      page-break-inside: avoid;
+   }
+
+   tr, img {
+      page-break-inside: avoid;
+   }
+
+   img {
+      max-width: 100% !important;
+   }
+
+   @page :left {
+      margin: 15mm 20mm 15mm 10mm;
+   }
+
+   @page :right {
+      margin: 15mm 10mm 15mm 20mm;
+   }
+
+   p, h2, h3 {
+      orphans: 3; widows: 3;
+   }
+
+   h2, h3 {
+      page-break-after: avoid;
+   }
+}
+</style>
+
+
+
+</head>
+
+<body>
+<h1>Prediction of exercise execution quality from accelerometer data</h1>
+
+<h2>Summary</h2>
+
+<p>I downloaded data recorded from various accelerometers during exercise
+from the Human Activity Recognition dataset at <a href="http://groupware.les.inf.puc-rio.br/har">har</a> and trained a
+model to predict which class of exercise execution quality the
+measurement is from.</p>
+
+<p>As there are a decent number of samples (almost 20000) for training
+and a lot of variables that could be significant (54 possible
+predictors after cleanup) a blackbox model with automatic feature
+selection seems promising. A first attempt using random forest
+immediately performed very well on the cross validation set, so no
+further models where considered. It also turned out that all of the 20
+predictions on the test set where correct :)</p>
+
+<h2>Data Processing</h2>
+
+<h3>Load dependencies, enable multicore processing</h3>
+
+<pre><code class="r">library(reshape2)
+library(caret)
+library(randomForest)
+library(doParallel)
+registerDoParallel(cores = detectCores())
+</code></pre>
+
+<h3>Read in csv data, remove columns without useful data</h3>
+
+<pre><code class="r">trainingRaw &lt;- read.csv(&quot;pml-training.csv&quot;, na.strings=c(&quot;&quot;, &quot;\&quot;\&quot;&quot;, &quot;NA&quot;))
+testingRaw &lt;- read.csv(&quot;pml-testing.csv&quot;, na.strings=c(&quot;&quot;, &quot;\&quot;\&quot;&quot;, &quot;NA&quot;))
+trainingNonEmpty &lt;- trainingRaw[, colSums(!is.na(testingRaw)) != 0]
+testingNonEmpty &lt;- testingRaw[, colSums(!is.na(testingRaw)) != 0]
+
+delCols &lt;- function(data) {
+    subset(data, select = -c(X,
+                             raw_timestamp_part_1,
+                             raw_timestamp_part_2,
+                             new_window,
+                             num_window))
+}
+
+trainingPre &lt;- delCols(trainingNonEmpty)
+testing &lt;- delCols(testingNonEmpty)
+</code></pre>
+
+<h3>Split data into training data set (90%) and cross validation data set (10%)</h3>
+
+<pre><code class="r">set.seed(0)
+train = sample(1:dim(trainingPre)[1],size=dim(trainingPre)[1] * 0.9, replace=F)
+training = trainingPre[train,]
+validating = trainingPre[-train,]
+</code></pre>
+
+<h3>Train a random forest model on the training data set</h3>
+
+<pre><code class="r">modFit &lt;- train(classe ~ ., method=&quot;rf&quot;, trControl = trainControl(allowParallel = TRUE), data=training)
+</code></pre>
+
+<h3>Evaluate performance of the trained model on the cross validation data set</h3>
+
+<pre><code class="r">confusionMatrix(validating$classe, predict(modFit, validating))
+</code></pre>
+
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction   A   B   C   D   E
+##          A 558   0   0   0   0
+##          B   0 378   1   0   0
+##          C   0   1 341   0   0
+##          D   0   0   2 314   0
+##          E   0   0   0   2 366
+## 
+## Overall Statistics
+##                                         
+##                Accuracy : 0.997         
+##                  95% CI : (0.993, 0.999)
+##     No Information Rate : 0.284         
+##     P-Value [Acc &gt; NIR] : &lt;2e-16        
+##                                         
+##                   Kappa : 0.996         
+##  Mcnemar&#39;s Test P-Value : NA            
+## 
+## Statistics by Class:
+## 
+##                      Class: A Class: B Class: C Class: D Class: E
+## Sensitivity             1.000    0.997    0.991    0.994    1.000
+## Specificity             1.000    0.999    0.999    0.999    0.999
+## Pos Pred Value          1.000    0.997    0.997    0.994    0.995
+## Neg Pred Value          1.000    0.999    0.998    0.999    1.000
+## Prevalence              0.284    0.193    0.175    0.161    0.186
+## Detection Rate          0.284    0.193    0.174    0.160    0.186
+## Detection Prevalence    0.284    0.193    0.174    0.161    0.187
+## Balanced Accuracy       1.000    0.998    0.995    0.996    0.999
+</code></pre>
+
+<p>All of the classes are well represented in the cross validation data
+set. Accuracy of 0.997 indicates that the model is working very well.</p>
+
+<h3>Finally predict the activity class for the samples in the testing</h3>
+
+<p>set and write them to files for uploading to coursera</p>
+
+<pre><code class="r">x &lt;- predict(modFit, testing)
+x
+</code></pre>
+
+<pre><code>##  [1] B A B A A E D B A A B C B A E E A B B B
+## Levels: A B C D E
+</code></pre>
+
+<pre><code class="r">n = length(x)
+for(i in 1:n){ 
+    filename = paste0(&quot;problem_id_&quot;,i,&quot;.txt&quot;)
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+}
+</code></pre>
+
+</body>
+
+</html>
