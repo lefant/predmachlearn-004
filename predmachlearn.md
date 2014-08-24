@@ -1,6 +1,14 @@
 Prediction of exercise execution quality from accelerometer data
 ================================================================
 
+by Fabian Linzberger
+
+github repo with Rmarkdown source code:
+https://github.com/lefant/predmachlearn-004
+
+online rendered version on github pages:
+http://lefant.github.io/predmachlearn-004/predmachlearn.html
+
 
 
 ## Summary
@@ -115,8 +123,7 @@ All of the classes are well represented in the cross validation data
 set. Accuracy of 0.997 indicates that the model is working very well.
 
 
-### Finally predict the activity class for the samples in the testing
-set and write them to files for uploading to coursera
+### Finally predict the activity class for the samples in the testing set and write them to files for uploading to coursera
 
 ```r
 x <- predict(modFit, testing)

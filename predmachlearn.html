@@ -151,6 +151,14 @@ hr {
 <body>
 <h1>Prediction of exercise execution quality from accelerometer data</h1>
 
+<p>by Fabian Linzberger</p>
+
+<p>github repo with Rmarkdown source code:
+<a href="https://github.com/lefant/predmachlearn-004">https://github.com/lefant/predmachlearn-004</a></p>
+
+<p>online rendered version on github pages:
+<a href="http://lefant.github.io/predmachlearn-004/predmachlearn.html">http://lefant.github.io/predmachlearn-004/predmachlearn.html</a></p>
+
 <h2>Summary</h2>
 
 <p>I downloaded data recorded from various accelerometers during exercise
@@ -250,9 +258,7 @@ validating = trainingPre[-train,]
 <p>All of the classes are well represented in the cross validation data
 set. Accuracy of 0.997 indicates that the model is working very well.</p>
 
-<h3>Finally predict the activity class for the samples in the testing</h3>
-
-<p>set and write them to files for uploading to coursera</p>
+<h3>Finally predict the activity class for the samples in the testing set and write them to files for uploading to coursera</h3>
 
 <pre><code class="r">x &lt;- predict(modFit, testing)
 x
