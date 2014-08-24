@@ -1,6 +1,14 @@
 Prediction of exercise execution quality from accelerometer data
 ================================================================
 
+by Fabian Linzberger
+
+github repo with Rmarkdown source code:
+https://github.com/lefant/predmachlearn-004
+
+online rendered version on github pages:
+http://lefant.github.io/predmachlearn-004/predmachlearn.html
+
 ```{r setoptions, results="hide", echo=FALSE}
 opts_chunk$set(cache = TRUE)
 ```
